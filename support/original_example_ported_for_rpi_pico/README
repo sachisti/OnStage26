@@ -1,0 +1,8 @@
+This is the original program for lidar COIN D6 ported to RPI PICO 2W / Arduino IDE environment.
+
+Many places that are not in use could be still removed, but it is a working version.
+
+Sketch uses 100468 bytes (2%) of program storage space. Maximum is 4186112 bytes.
+Global variables use 114372 bytes (21%) of dynamic memory, leaving 409916 bytes for local variables. Maximum is 524288 bytes.
+
+The attached python program can visualize the scan copy&pasted from Arduino serial monitor, see example PNG file.
