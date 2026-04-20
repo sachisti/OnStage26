@@ -18,7 +18,7 @@ def parse_input(text: str):
     for dist_str, inten_str, angle_str in matches:
         distance = float(dist_str)
         intensity = float(inten_str)
-        angle_deg = float(angle_str)
+        angle_deg = 126 + float(angle_str)
         result.append((distance, intensity, angle_deg))
     return result
 
@@ -55,6 +55,7 @@ def main():
     max_distance = max(distances) if distances else 1.0
     if max_distance <= 0:
         max_distance = 1.0
+    max_distance = 1.5 
 
     min_intensity = min(intensities)
     max_intensity = max(intensities)
@@ -66,7 +67,7 @@ def main():
     root = tk.Tk()
     root.title("Lidar radial view")
 
-    canvas = tk.Canvas(root, width=width, height=height, bg="white")
+    canvas = tk.Canvas(root, width=width, height=height, bg="darkblue")
     canvas.pack()
 
     # Reference circles
@@ -81,6 +82,12 @@ def main():
     for distance, intensity, angle_deg in data:
         angle = math.radians(angle_deg)
 
+        if distance < 0.24:
+            distance = max_distance
+            color = "#ff2020"
+        else:
+            color = "#bbbbbb"
+
         # 0° points up, positive angles go clockwise
         x = cx + math.sin(angle) * (distance / max_distance) * usable_radius
         y = cy - math.cos(angle) * (distance / max_distance) * usable_radius
@@ -88,7 +95,7 @@ def main():
         gray = intensity_to_gray(intensity, min_intensity, max_intensity)
 
         # Ray
-        canvas.create_line(cx, cy, x, y, fill="#bbbbbb")
+        canvas.create_line(cx, cy, x, y, fill=color)
 
         # Endpoint
         canvas.create_oval(
