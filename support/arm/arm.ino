@@ -1,5 +1,13 @@
 #include <Servo.h>
 
+#define PAZA   0
+#define LAKET  1
+#define ZLOMZAPASTIE 2
+#define OTOCZAPASTIE 3
+#define PRSTY 4
+#define OTACA 5
+
+
 void print_usage()
 {
   Serial.println("Control keys:");
