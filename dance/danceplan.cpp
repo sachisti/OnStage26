@@ -29,16 +29,17 @@ int pozicia3[6] = {74, 132, 179, 104, 113, 90};
 int *pozicie[] = { pozicia0, pozicia1, pozicia2, pozicia3 };
 
 
-unsigned long cas_kroku[POCET_ROBOTOV][MAX_POCET_KROKOV] = {{ 2000, 4000, 6000, 8000, 10000, 12000, 14000, 16000, 18000, 20000 },
+unsigned long cas_kroku[POCET_ROBOTOV][MAX_POCET_KROKOV] = {{ 2000, 6000, 7800, 10000, 13800, 16800, 20900, 23500, 28800, 39000 },
                                                          { 2000, 4000, 6000, 8000, 10000, 12000, 14000, 16000, 18000, 20000 },
                                                          { 2000, 4000, 6000, 8000, 10000, 12000, 14000, 16000, 18000, 20000 } };
 int prikaz_kroku[POCET_ROBOTOV][MAX_POCET_KROKOV] = {
                                  { SIKMO, 
-                                   SIKMO, 
-                                   SIKMO, 
-                                   SIKMO, 
                                    OTOCKA_VPRAVO, 
-                                   OTOCKA_VLAVO,
+                                   RAMENO[pozicia]
+                                   ZASTAV, 
+                                   SIKMO,
+                                   OTOCKA_VPRAVO,
+                                   SIKMO,
                                    OBLUCIK_VLAVO,
                                    OBLUCIK_VPRAVO,
                                    ZASTAV,
@@ -67,15 +68,15 @@ int prikaz_kroku[POCET_ROBOTOV][MAX_POCET_KROKOV] = {
                                    RAMENO
                                    } };
 int param1[POCET_ROBOTOV][MAX_POCET_KROKOV] = {           // rychlost alebo index pozicie ramena
-          { 800,
-            800,
-            800,
-            800,     
+          { 700,
             800,
             800,
             800,
             800,
-            NIC,
+            800,
+            800,
+            800,
+            800,
             1 },            // pozicia1
           { 800,
             800,
@@ -85,7 +86,7 @@ int param1[POCET_ROBOTOV][MAX_POCET_KROKOV] = {           // rychlost alebo inde
             800,
             800,
             800,
-            NIC,
+            800,
             1 },            // pozicia1
           { 800,
             800,
@@ -101,14 +102,14 @@ int param1[POCET_ROBOTOV][MAX_POCET_KROKOV] = {           // rychlost alebo inde
 int param2[POCET_ROBOTOV][MAX_POCET_KROKOV] = {           // druha rychlost alebo uhol
           { 0,
             180,
-            90,
             270,
-            NIC,
-            NIC,
-            200,
-            200,
-            NIC,
-            NIC },
+            180,
+            90,
+            0,
+            90,
+            90,
+            0,
+            0 },
           { 0,
             180,
             90,
