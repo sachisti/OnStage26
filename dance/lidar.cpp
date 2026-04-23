@@ -10,6 +10,12 @@
 #include "point_cloud_optimize.h"
 #include "lidar_information.h"
 
+#define ROZMER 240              // 240 zodpoveda 2.5 x 2.5 cm polickam na ploche 3x3 metre
+#define POLROZMER 120
+#define DOMETRA 40
+
+#define OTOC_LIDAR 126          // korekcia namontovania lidaru
+
 
 using namespace std;
 
@@ -405,20 +411,88 @@ void setup_lidar()
 	memset(local_scan, 0, sizeof(local_scan));
 }
 
-	static int uu = 0;
+const double rk = 0.196;  // polomer kvetinaca
+
+uint16_t policka[ROZMER * ROZMER];
+
+int pocitadlo = 0;
+
 void analyze_data(LaserScan *scan)
 {
-
-	uu++;
-	if (uu != 100) return;
-  int histogram[60];
+  memset(policka, 0, 2 * ROZMER * ROZMER);
+  int max_x,max_y,max_p=0;
 
   for (int i = 0; i < scan->points.size(); i++)
   {
-    Serial.print("["); Serial.print(scan->points[i].range); Serial.print(","); Serial.print(scan->points[i].intensity); Serial.print(","); Serial.print(scan->points[i].angle); Serial.print("]");
-  }
-  Serial.println("\n---");
+		if ((scan->points[i].range < 0.35) || (scan->points[i].range > 3))
+		  continue;
+    double x = scan->points[i].range * sin(M_PI * (scan->points[i].angle + OTOC_LIDAR) / 180);
+    double y = scan->points[i].range * cos(M_PI * (scan->points[i].angle + OTOC_LIDAR) / 180);
+
+    int stare_ksx = -1000;
+		int stare_ksy = -1000;
+
+    int startx = POLROZMER + (DOMETRA * x + 0.5);
+		int starty = POLROZMER + (DOMETRA * (y + rk) + 0.5);
+
+		int bod_y = POLROZMER + (DOMETRA * y + 0.5);
+
+    for (int beta = 0; beta < 360; beta += 3) // 7)
+		{
+      double ksx = x + rk * sin(M_PI * beta / 180);
+			double ksy = y + rk * cos(M_PI * beta / 180);
+			int ksx_int = POLROZMER + (DOMETRA * ksx + 0.5);
+			int ksy_int = POLROZMER + (DOMETRA * ksy + 0.5);
+
+			if ((stare_ksx == ksx_int) && (stare_ksy == ksy_int)) 
+			  continue;
+
+			if ((ksx_int == startx) && (ksy_int == starty) && (beta > 30))  // tento sme uz zapocitali na zaciatku
+			  continue;
+
+      stare_ksx = ksx_int;
+			stare_ksy = ksy_int;
+
+      if ((ksx_int >= 0) &&
+			    (ksy_int >= 0) &&
+			    (ksx_int < ROZMER) &&
+					(ksy_int < ROZMER))
+			{		 
+	       for (int j = -1; j <= 1; j++)
+				   for (int k = -1; k <= 1; k++)
+					 {
+						if ((ksx_int + k >= 0) &&
+								(ksy_int + j >= 0) &&
+								(ksx_int + k < ROZMER) &&
+								(ksy_int + j < ROZMER))
+						{	
+							int delta = 3 - abs(j) - abs(k);
+
+							int novy_pocet = policka[(ksy_int + j) * ROZMER + ksx_int + k];
+							novy_pocet += delta;
+							policka[(ksy_int + j) * ROZMER + ksx_int + k] = novy_pocet;
+
+							if (novy_pocet > max_p)
+							{
+								max_p = novy_pocet;
+								max_x = ksx_int + k;
+								max_y = ksy_int + j;
+							}
+						}
+					 }
+			}
+		}
+  } 
+
+	pocitadlo++;
+	if (pocitadlo == 1)
+	{
+		Serial.print("["); Serial.print(max_x - POLROZMER); Serial.print(","); Serial.print(max_y - POLROZMER); Serial.print(",("); Serial.print(max_p); Serial.println(")]");
+		pocitadlo = 0;
+	}
+
 }
+
 
 void loop_lidar()
 {
