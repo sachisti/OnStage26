@@ -9,6 +9,11 @@
 #include "point_cloud_optimize.h"
 #include "lidar_information.h"
 
+#define ROZMER 240
+#define POLROZMER 120
+#define DOMETRA 40
+
+#define OTOC_LIDAR 126
 
 using namespace std;
 
@@ -193,12 +198,12 @@ int read_once()
 						
 						if((node_lidar.lidar_time.scan_time_current - node_lidar.lidar_time.scan_time_record) > 1000)
 						{
-							Serial.print("full----- count=");
+							/*Serial.print("full----- count=");
               Serial.print(scan_count);
               Serial.print("time=");
               Serial.print(millis());
               Serial.print("frequence=");
-              Serial.println(local_scan[0].scan_frequence);
+              Serial.println(local_scan[0].scan_frequence); */
 							node_lidar.lidar_time.scan_time_record = node_lidar.lidar_time.scan_time_current;
 						}
 						node_lidar.lidar_time.scan_start_time = node_lidar.lidar_time.tim_scan_start;
@@ -259,8 +264,8 @@ void send_lidar_data(LaserScan &outscan)
 		if(node_lidar.lidar_status.isConnected)
 		{
 			//outscan.points.clear();
-			float range = 0;
-			float angle = 0.0;
+			double range = 0;
+			double angle = 0.0;
 			uint16_t intensity = 0;
 			for (int i = 0; i < count; i++)
 			{
@@ -404,24 +409,137 @@ void setup()
     }
 	node_lidar.lidar_status.lidar_ready = true;
 	memset(local_scan, 0, sizeof(local_scan));
+	delay(3000);
 }
+
+const double rk = 0.196;  // polomer kvetinaca
+
+uint16_t policka[ROZMER * ROZMER];
+
+int pocitadlo = 0;
 
 void analyze_data(LaserScan *scan)
 {
-  int histogram[60];
+    Serial.print("!");    
+
+  memset(policka, 0, 2 * ROZMER * ROZMER);
+  int max_x,max_y,max_p=0;
+
+  for (int i = 0; i < scan->points.size(); i++)
+  {
+		if ((scan->points[i].range < 0.35) || (scan->points[i].range > 3))
+		  continue;
+    double x = scan->points[i].range * sin(M_PI * (scan->points[i].angle + OTOC_LIDAR) / 180);
+    double y = scan->points[i].range * cos(M_PI * (scan->points[i].angle + OTOC_LIDAR) / 180);
+
+		//Serial.print("range:"); Serial.print(scan->points[i].range); Serial.print(", angle:"); Serial.print(scan->points[i].angle); Serial.print(", x="); Serial.print(x); Serial.print(", y="); Serial.println(y);
+
+    int stare_ksx = -1000;
+		int stare_ksy = -1000;
+
+    int startx = POLROZMER + (DOMETRA * x + 0.5);
+		int starty = POLROZMER + (DOMETRA * (y + rk) + 0.5);
+
+		int bod_y = POLROZMER + (DOMETRA * y + 0.5);
+
+		//policka[bod_y * ROZMER + startx] = 1;
+
+    for (int beta = 0; beta < 360; beta += 3) // 7)
+		{
+      double ksx = x + rk * sin(M_PI * beta / 180);
+			double ksy = y + rk * cos(M_PI * beta / 180);
+			int ksx_int = POLROZMER + (DOMETRA * ksx + 0.5);
+			int ksy_int = POLROZMER + (DOMETRA * ksy + 0.5);
+
+			if ((stare_ksx == ksx_int) && (stare_ksy == ksy_int)) 
+			  continue;
+
+			if ((ksx_int == startx) && (ksy_int == starty) && (beta > 30))  // tento sme uz zapocitali na zaciatku
+			  continue;
+
+      stare_ksx = ksx_int;
+			stare_ksy = ksy_int;
+
+      if ((ksx_int >= 0) &&
+			    (ksy_int >= 0) &&
+			    (ksx_int < ROZMER) &&
+					(ksy_int < ROZMER))
+			{		 
+//				int j = 0; int k = 0;
+	       for (int j = -1; j <= 1; j++)
+				   for (int k = -1; k <= 1; k++)
+					 {
+						if ((ksx_int + k >= 0) &&
+								(ksy_int + j >= 0) &&
+								(ksx_int + k < ROZMER) &&
+								(ksy_int + j < ROZMER))
+						{	
+							int delta = 3 - abs(j) - abs(k);
+
+							int novy_pocet = policka[(ksy_int + j) * ROZMER + ksx_int + k];
+							novy_pocet += delta;
+							policka[(ksy_int + j) * ROZMER + ksx_int + k] = novy_pocet;
+
+							if (novy_pocet > max_p)
+							{
+								max_p = novy_pocet;
+								max_x = ksx_int + k;
+								max_y = ksy_int + j;
+							}
+						}
+					 }
+			}
+		}
+		//break;
+  }
+
+  Serial.print("?");    
+
+	pocitadlo++;
+	if (pocitadlo == 1)
+	{
+		Serial.print("["); Serial.print(max_x - POLROZMER); Serial.print(","); Serial.print(max_y - POLROZMER); Serial.print(",("); Serial.print(max_p); Serial.println(")]");
+		pocitadlo = 0;
+/*
+		for (int i = (ROZMER - 1); i >= 0; i--)
+		{
+		  for (int j = 0; j < ROZMER; j++)
+		  {
+		   	Serial.print(policka[i * ROZMER + j]); Serial.print(" ");
+		  }
+		  Serial.println("");
+		}
+		while(1);
+*/
+	}
+
+}
+
+void dump_data(LaserScan *scan)
+{
+	pocitadlo++;
+	if (pocitadlo == 20)
+	{
 
   for (int i = 0; i < scan->points.size(); i++)
   {
     Serial.print("["); Serial.print(scan->points[i].range); Serial.print(","); Serial.print(scan->points[i].intensity); Serial.print(","); Serial.print(scan->points[i].angle); Serial.print("]");
   }
   Serial.println("\n---");
+			while(1);
+
+	}
 }
 
 void loop()
 {
+	 Serial.print(".");
    read_once();
+	 Serial.print(",");
 		LaserScan scan;
 		send_lidar_data(scan);
-    
+
+    Serial.print(";");    
     analyze_data(&scan);
+		//dump_data(&scan);
 }
