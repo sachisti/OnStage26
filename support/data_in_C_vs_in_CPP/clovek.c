@@ -17,5 +17,5 @@ void main()
     printf("zoznam ludi:\n\n");
     for (int i = 0; i < POCET_LUDI; i++)
         vypis(i);
-    priezvisko[1][1] = 'A';
+    priezvisko[1][1] = 'A'; // pozor, toto padne! :-)  (je to iba ukazka, preco c++ vyzaduje "const")
 }
