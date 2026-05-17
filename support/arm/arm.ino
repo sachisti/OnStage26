@@ -17,7 +17,7 @@ void print_usage()
 
 Servo s[6];
 int selected_servo = 0;
-int positions[6] = {90, 90, 90, 90, 90, 90};
+int positions[6] = {74, 132, 179, 104, 113, 192};
 
 void setup()
 {
@@ -51,8 +51,8 @@ void execute_command(char cmd)
   {
     case '*': if (selected_servo < 5) selected_servo++; update_servo = 1;  break;
     case '/': if (selected_servo > 0) selected_servo--; update_servo = 1; break;
-    case '+': if (positions[selected_servo] < 180) positions[selected_servo]++; update_position = 1; break; 
-    case '-': if (positions[selected_servo] > 0) positions[selected_servo]--; update_position = 1;  break; 
+    case '+': if (positions[selected_servo] < 1000) positions[selected_servo]++; update_position = 1; break; 
+    case '-': if (positions[selected_servo] > -1000) positions[selected_servo]--; update_position = 1;  break; 
     case '?': print_usage(); break;
   }
   if (update_servo) 
